@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat, Track & Media Share System</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background-color: #f4f6f8; 
+      color: #333;
+    }
+    
+    /* টপ নেভিগেশন বার */
+    .navbar { 
+      display: flex; 
+      background: #075e54; 
+      color: white; 
+      position: sticky; 
+      top: 0; 
+      z-index: 1000; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+      align-items: center;
+    }
+    .nav-tab { 
+      flex: 1; 
+      text-align: center; 
+      padding: 14px 5px; 
+      font-weight: 600; 
+      cursor: pointer; 
+      border-bottom: 3px solid transparent; 
+      transition: all 0.3s ease; 
+      font-size: 14px; 
+      position: relative;
+    }
+    .nav-tab.active { 
+      border-bottom: 3px solid #25d366; 
+      background: rgba(255, 255, 255, 0.1); 
+      color: #25d366; 
+    }
+
+    .lang-btn {
+      background: #128c7e;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      margin-right: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    .card { 
+      background: #ffffff; 
+      border-radius: 12px; 
+      padding: 18px; 
+      margin-bottom: 16px; 
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); 
+      border: 1px solid #eef0f2;
+    }
+    .card h3 { margin-top: 0; font-size: 17px; color: #075e54; margin-bottom: 12px; }
+    
+    #gpsWarningCard {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      display: none;
+      text-align: center;
+    }
+    
+    button { 
+      cursor: pointer; 
+      padding: 11px 16px; 
+      border-radius: 8px; 
+      border: none; 
+      background: #25d366; 
+      color: white; 
+      font-weight: 600; 
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary { background: #075e54; }
+    button.danger { background: #dc3545; }
+    button.warning-btn { background: #ffc107; color: #000; width: 100%; margin-top: 10px; font-weight: bold; }
+    
+    input { 
+      padding: 12px; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 8px; 
+      width: 100%; 
+      margin-bottom: 10px; 
+      font-size: 14px; 
+      outline: none;
+    }
+    input:focus { border-color: #075e54; }
+    
+    .chat-item { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 14px 16px; 
+      background: white; 
+      border-bottom: 1px solid #f0f0f0; 
+      cursor: pointer; 
+      transition: background 0.2s; 
+    }
+    .chat-item:hover { background: #f9f9f9; }
+    .avatar { 
+      width: 46px; 
+      height: 46px; 
+      border-radius: 50%; 
+      background: #128c7e; 
+      color: white; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: bold; 
+      font-size: 18px; 
+      margin-right: 14px; 
+    }
+    .chat-info { flex: 1; overflow: hidden; }
+    .chat-name { font-weight: 600; font-size: 16px; color: #222; }
+    .chat-last-msg { font-size: 13px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+    
+    .unread-badge {
+      background: #25d366;
+      color: white;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 5px;
+    }
+
+    /* হোয়াটসঅ্যাপ স্টাইল ফ্লোটিং নোটিফিকেশন পপ-আপ */
+    #inAppPopup {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #075e54;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      z-index: 9999;
+      display: none;
+      font-size: 14px;
+      max-width: 90%;
+      text-align: center;
+      border: 2px solid #25d366;
+      font-weight: 500;
+    }
+
+    #chatScreen { 
+      display: none; 
+      position: fixed; 
+      top: 0; left: 0; 
+      width: 100%; height: 100%; 
+      background: #e5ddd5; 
+      z-index: 2000; 
+      flex-direction: column; 
+    }
+    .chat-header { 
+      background: #075e54; 
+      color: white; 
+      padding: 12px 16px; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .chat-header button { background: transparent; border: none; font-size: 20px; color: white; padding: 0; }
+    #messageHistory { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    
+    .msg-bubble { 
+      max-width: 75%; 
+      padding: 9px 13px 4px 13px; 
+      border-radius: 10px; 
+      font-size: 14px; 
+      word-wrap: break-word; 
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .msg-me { align-self: flex-end; background: #dcf8c6; color: #000; }
+    .msg-other { align-self: flex-start; background: #fff; color: #000; }
+    
+    .msg-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #777;
+      margin-top: 2px;
+    }
+    .tick { font-weight: bold; font-size: 12px; }
+    .tick-read { color: #34b7f1; }
+
+    .delete-msg-btn {
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0;
+    }
+    .delete-msg-btn:hover { color: #dc3545; }
+
+    .chat-input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 8px; }
+    .chat-input-area input { margin-bottom: 0; }
+
+    .status-badge { font-weight: bold; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+    .online { background-color: #d4edda; color: #155724; }
+    .offline { background-color: #f8d7da; color: #721c24; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+
+  <!-- ইন-অ্যাপ পপআপ ব্যানার -->
+  <div id="inAppPopup">নতুন মেসেজ এসেছে!</div>
+
+  <!-- টপ নেভিগেশন বার -->
+  <div class="navbar">
+    <div class="nav-tab active" id="tabHome" onclick="switchTab('homeTab', this)">🏠 হোম</div>
+    <div class="nav-tab" id="tabChats" onclick="switchTab('chatsTab', this)">💬 চ্যাট <span id="totalUnreadBadge" style="background:#25d366; color:white; border-radius:50%; font-size:10px; padding:1px 5px; display:none;">0</span></div>
+    <div class="nav-tab" id="tabTracking" onclick="switchTab('trackingTab', this)">📍 ট্র্যাকিং</div>
+    <button class="lang-btn" id="langToggleBtn" onclick="toggleLanguage()">🌐 English</button>
+  </div>
+
+  <!-- ১. হোম ট্যাব -->
+  <div id="homeTab" class="tab-content active">
+    
+    <div class="card" id="gpsWarningCard">
+      <h3 style="color: #856404; margin-bottom: 5px;" id="warnTitle">⚠️ জিপিএস লোকেশন বন্ধ!</h3>
+      <p id="warnDesc" style="font-size: 13px; margin: 0;">আপনার লোকেশন ট্র্যাকিং নিষ্ক্রিয় রয়েছে। লাইভ লোকেশন শেয়ার করতে এটি আবার চালু করুন।</p>
+      <button class="warning-btn" onclick="sendLocation()" id="btnEnableGps">📍 লোকেশন আবার চালু করুন</button>
+    </div>
+
+    <div class="card">
+      <h3 id="txtProfile">🆔 আপনার প্রোফাইল</h3>
+      <p style="margin: 5px 0;"><span id="txtYourId">আপনার আইডি:</span> <b id="myUserIdDisplay" style="color: #075e54;">USR-000000</b></p>
+      <button onclick="copyMyId()" class="secondary" id="btnCopyId" style="margin-top: 8px;">📋 আইডি কপি করুন</button>
+      <br><br>
+      <div id="qrcode"></div>
+      <br>
+      <input type="text" id="customIdInput" placeholder="কাস্টম আইডি লিখুন">
+      <button onclick="setCustomId()" id="btnSetCustomId">কাস্টম আইডি সেট করুন</button>
+      <p id="customIdLockedMsg" style="color: #666; font-size: 13px; margin-top: 8px; display: none;"></p>
+    </div>
+
+    <div class="card">
+      <h3 id="txtLiveStatus">📍 লাইভ লোকেশন স্ট্যাটাস</h3>
+      <p style="margin: 5px 0;"><span id="txtStatusLabel">স্ট্যাটাস:</span> <span id="statusBadge" class="status-badge offline">নিষ্ক্রিয়</span></p>
+      <p id="trackingInfo" style="color: #666; font-size: 13px; margin-top: 8px;">ব্যাকগ্রাউন্ড লোকেশন সার্ভিস সচল আছে...</p>
+    </div>
+
+    <div class="card">
+      <h3 id="txtAddFriend">➕ নতুন বন্ধু যুক্ত করুন</h3>
+      <input type="text" id="friendNicknameInput" placeholder="বন্ধুর নাম">
+      <input type="text" id="friendIdInput" placeholder="বন্ধুর আইডি">
+      <button onclick="handleAddFriend()" id="btnSaveFriend" style="width: 100%;">সেভ করুন</button>
+      <br><br>
+      <button onclick="toggleScanner()" class="secondary" id="btnScanQR" style="width: 100%;">📷 QR Code স্ক্যান করুন</button>
+      <div id="reader" style="width: 100%; display: none; margin-top: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- ২. চ্যাট ট্যাব -->
+  <div id="chatsTab" class="tab-content">
+    <div class="card" style="padding: 0; border-radius: 12px; overflow: hidden;">
+      <div id="chatFriendsList">কোনো বন্ধু যোগ করা নেই।</div>
+    </div>
+  </div>
+
+  <!-- ৩. ট্র্যাকিং ট্যাব -->
+  <div id="trackingTab" class="tab-content">
+    <div style="margin-bottom: 12px;">
+      <button onclick="trackAllFriends()" id="btnTrackAll" style="width: 100%;">📍 সকলকে একসাথে ট্র্যাক করুন</button>
+    </div>
+    
+    <div id="trackingFriendsList">কোনো বন্ধু যোগ করা নেই।</div>
+    
+    <div id="trackingDisplayArea" class="card" style="display: none; margin-top: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 id="trackingTitle" style="margin: 0;">📍 ট্র্যাকিং তথ্য</h3>
+        <button onclick="closeTracking()" class="danger" id="btnCloseTracking" style="padding: 6px 12px; font-size: 12px;">❌ বন্ধ করুন</button>
+      </div>
+      <div id="trackingDetails"></div>
+    </div>
+  </div>
+
+  <!-- চ্যাট স্ক্রিন -->
+  <div id="chatScreen">
+    <div class="chat-header">
+      <button onclick="closeChat()">⬅️</button>
+      <div>
+        <div id="activeChatName" style="font-weight: bold; font-size: 16px;">বন্ধুর নাম</div>
+        <div id="activeChatId" style="font-size: 11px; opacity: 0.85;">USR-000000</div>
+      </div>
+    </div>
+    <div id="messageHistory"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chatMessageInput" placeholder="মেসেজ লিখুন...">
+      <button onclick="sendMessage()" id="btnSendMessage">পাঠান</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, off, remove, update } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHzCVQc1DoKayooME19vEB1b5a6l8Z9hM",
+      authDomain: "chat-and-track.firebaseapp.com",
+      databaseURL: "https://chat-and-track-default-rtdb.firebaseio.com",
+      projectId: "chat-and-track",
+      storageBucket: "chat-and-track.firebasestorage.app",
+      messagingSenderId: "1083008963055",
+      appId: "1:1083008963055:web:29973bbae53106e5d1e61a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let myUserId = localStorage.getItem('myUserId') || 'USR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    localStorage.setItem('myUserId', myUserId);
+
+    let savedFriends = JSON.parse(localStorage.getItem('savedFriends')) || [];
+    let currentChatFriendId = null;
+    let activeListeners = [];
+    let currentLang = 'bn';
+    let unreadCounts = {};
+
+    window.onload = function() {
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+      sendLocation();
+    };
+
+    function playWhatsAppTone() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        gain1.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start();
+        osc1.stop(audioCtx.currentTime + 0.08);
+
+        setTimeout(() => {
+          const osc2 = audioCtx.createOscillator();
+          const gain2 = audioCtx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(900, audioCtx.currentTime);
+          gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+          osc2.connect(gain2);
+          gain2.connect(audioCtx.destination);
+          osc2.start();
+          osc2.stop(audioCtx.currentTime + 0.12);
+        }, 90);
+      } catch (e) { console.log(e); }
+    }
+
+    function showInAppPopup(message) {
+      const popup = document.getElementById('inAppPopup');
+      popup.innerText = message;
+      popup.style.display = 'block';
+      setTimeout(() => {
+        popup.style.display = 'none';
+      }, 4000);
+    }
+
+    // পূর্ণাঙ্গ ডিকশনারি (সব লেখা এখানে বাংলা ও ইংরেজিতে কন্ট্রোল হবে)
+    const translations = {
+      bn: {
+        tabHome: "🏠 হোম",
+        tabChats: "💬 চ্যাট",
+        tabTracking: "📍 ট্র্যাকিং",
+        langBtn: "🌐 English",
+        txtProfile: "🆔 আপনার প্রোফাইল",
+        txtYourId: "আপনার আইডি:",
+        btnCopyId: "📋 আইডি কপি করুন",
+        customIdHolder: "কাস্টম আইডি লিখুন",
+        btnSetCustomId: "কাস্টম আইডি সেট করুন",
+        customIdLocked: "🔒 আপনি ইতিমধ্যে আপনার কাস্টম আইডি একবার সেট করেছেন।",
+        txtLiveStatus: "📍 লাইভ লোকেশন স্ট্যাটাস",
+        txtStatusLabel: "স্ট্যাটাস:",
+        trackingSending: "ব্যাকগ্রাউন্ড লোকেশন সার্ভিস সচল আছে...",
+        txtAddFriend: "➕ নতুন বন্ধু যুক্ত করুন",
+        friendNameHolder: "বন্ধুর নাম",
+        friendIdHolder: "বন্ধুর আইডি",
+        btnSaveFriend: "সেভ করুন",
+        btnScanQR: "📷 QR Code স্ক্যান করুন",
+        btnTrackAll: "📍 সকলকে একসাথে ট্র্যাক করুন",
+        btnCloseTracking: "❌ বন্ধ করুন",
+        msgHolder: "মেসেজ লিখুন...",
+        btnSendMessage: "পাঠান",
+        noFriends: "কোনো বন্ধু যোগ করা নেই।",
+        btnDelete: "মুছুন",
+        btnViewTrack: "📍 ট্র্যাকিং দেখুন",
+        onlineText: "🟢 অনলাইন",
+        warnTitle: "⚠️ জিপিএস লোকেশন বন্ধ!",
+        warnDesc: "আপনার লোকেশন ট্র্যাকিং নিষ্ক্রিয় রয়েছে। লাইভ লোকেশন শেয়ার করতে এটি আবার চালু করুন.",
+        btnEnableGps: "📍 লোকেশন আবার চালু করুন",
+        allTrackingTitle: "📍 সকলের লাইভ ট্র্যাকিং",
+        singleTrackingTitle: "📍 ট্র্যাকিং তথ্য"
+      },
+      en: {
+        tabHome: "🏠 Home",
+        tabChats: "💬 Chats",
+        tabTracking: "📍 Tracking",
+        langBtn: "🌐 বাংলা",
+        txtProfile: "🆔 Your Profile",
+        txtYourId: "Your ID:",
+        btnCopyId: "📋 Copy ID",
+        customIdHolder: "Enter Custom ID",
+        btnSetCustomId: "Set Custom ID",
+        customIdLocked: "🔒 You have already set your custom ID once.",
+        txtLiveStatus: "📍 Live Location Status",
+        txtStatusLabel: "Status:",
+        trackingSending: "Background location service active...",
+        txtAddFriend: "➕ Add New Friend",
+        friendNameHolder: "Friend's Name",
+        friendIdHolder: "Friend's ID",
+        btnSaveFriend: "Save",
+        btnScanQR: "📷 Scan QR Code",
+        btnTrackAll: "📍 Track All Together",
+        btnCloseTracking: "❌ Close",
+        msgHolder: "Type a message...",
+        btnSendMessage: "Send",
+        noFriends: "No friends added.",
+        btnDelete: "Delete",
+        btnViewTrack: "📍 View Track",
+        onlineText: "🟢 Online",
+        warnTitle: "⚠️ GPS Location Disabled!",
+        warnDesc: "Your location tracking is inactive. Turn it back on to share live location.",
+        btnEnableGps: "📍 Turn Location Back On",
+        allTrackingTitle: "📍 All Live Tracking",
+        singleTrackingTitle: "📍 Tracking Info"
+      }
+    };
+
+    window.toggleLanguage = function() {
+      currentLang = (currentLang === 'bn') ? 'en' : 'bn';
+      const t = translations[currentLang];
+      document.getElementById('tabHome').innerText = t.tabHome;
+      document.getElementById('tabChats').innerText = t.tabChats;
+      document.getElementById('tabTracking').innerText = t.tabTracking;
+      document.getElementById('langToggleBtn').innerText = t.langBtn;
+      document.getElementById('txtProfile').innerText = t.txtProfile;
+      document.getElementById('txtYourId').innerText = t.txtYourId;
+      document.getElementById('btnCopyId').innerText = t.btnCopyId;
+      document.getElementById('customIdInput').placeholder = t.customIdHolder;
+      document.getElementById('btnSetCustomId').innerText = t.btnSetCustomId;
+      document.getElementById('txtLiveStatus').innerText = t.txtLiveStatus;
+      document.getElementById('txtStatusLabel').innerText = t.txtStatusLabel;
+      document.getElementById('trackingInfo').innerText = t.trackingSending;
+      document.getElementById('txtAddFriend').innerText = t.txtAddFriend;
+      document.getElementById('friendNicknameInput').placeholder = t.friendNameHolder;
+      document.getElementById('friendIdInput').placeholder = t.friendIdHolder;
+      document.getElementById('btnSaveFriend').innerText = t.btnSaveFriend;
+      document.getElementById('btnScanQR').innerText = t.btnScanQR;
+      document.getElementById('btnTrackAll').innerText = t.btnTrackAll;
+      document.getElementById('btnCloseTracking').innerText = t.btnCloseTracking;
+      document.getElementById('chatMessageInput').placeholder = t.msgHolder;
+      document.getElementById('btnSendMessage').innerText = t.btnSendMessage;
+      document.getElementById('warnTitle').innerText = t.warnTitle;
+      document.getElementById('warnDesc').innerText = t.warnDesc;
+      document.getElementById('btnEnableGps').innerText = t.btnEnableGps;
+      renderLists();
+    };
+
+    window.switchTab = function(tabId, element) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      element.classList.add('active');
+    };
+
+    function renderMyInfo() {
+      document.getElementById('myUserIdDisplay').innerText = myUserId;
+      document.getElementById('qrcode').innerHTML = "";
+      new QRCode(document.getElementById("qrcode"), { text: myUserId, width: 120, height: 120 });
+      checkCustomIdStatus();
+    }
+    renderMyInfo();
+
+    function checkCustomIdStatus() {
+      const isSet = localStorage.getItem('isCustomIdSet') === 'true';
+      const t = translations[currentLang];
+      if (isSet) {
+        document.getElementById('customIdInput').style.display = 'none';
+        document.getElementById('btnSetCustomId').style.display = 'none';
+        const lockedMsg = document.getElementById('customIdLockedMsg');
+        lockedMsg.innerText = t.customIdLocked;
+        lockedMsg.style.display = 'block';
+      }
+    }
+
+    window.copyMyId = () => {
+      navigator.clipboard.writeText(myUserId).then(() => alert(currentLang === 'bn' ? "আইডি কপি হয়েছে!" : "ID Copied!"));
+    };
+
+    window.setCustomId = () => {
+      if (localStorage.getItem('isCustomIdSet') === 'true') return;
+      const customId = document.getElementById('customIdInput').value.trim();
+      if (customId) {
+        myUserId = customId;
+        localStorage.setItem('myUserId', myUserId);
+        localStorage.setItem('isCustomIdSet', 'true');
+        renderMyInfo();
+        alert(currentLang === 'bn' ? "কাস্টম আইডি সেট হয়েছে!" : "Custom ID set!");
+      }
+    };
+
+    function sendLocation() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('gpsWarningCard').style.display = 'none';
+        set(ref(db, 'users/' + myUserId + '/location'), {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          lastUpdated: Date.now()
+        });
+        const badge = document.getElementById('statusBadge');
+        if(badge) {
+          badge.className = "status-badge online";
+          badge.innerText = translations[currentLang].onlineText;
+        }
+      }, (error) => {
+        document.getElementById('gpsWarningCard').style.display = 'block';
+        const badge = document.getElementById('statusBadge');
+        if(badge) {
+          badge.className = "status-badge offline";
+          badge.innerText = currentLang === 'bn' ? "লোকেশন বন্ধ" : "Location Off";
+        }
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    }
+
+    sendLocation();
+    setInterval(sendLocation, 30000);
+
+    window.handleAddFriend = () => {
+      const nickname = document.getElementById('friendNicknameInput').value.trim();
+      const id = document.getElementById('friendIdInput').value.trim();
+      if (!id) return alert(currentLang === 'bn' ? "আইডি দিন!" : "Enter ID!");
+      if (savedFriends.some(f => f.id === id)) return alert(currentLang === 'bn' ? "আইডিটি আগেই সেভ করা আছে!" : "ID already saved!");
+      
+      savedFriends.push({ nickname: nickname || id, id: id });
+      localStorage.setItem('savedFriends', JSON.stringify(savedFriends));
+      document.getElementById('friendNicknameInput').value = "";
+      document.getElementById('friendIdInput').value = "";
+      renderLists();
+      setupChatListener(id, nickname || id);
+      alert(currentLang === 'bn' ? "বন্ধু যুক্ত হয়েছে!" : "Friend added!");
+    };
+
+    function setupChatListener(friendId, friendName) {
+      const chatId = [myUserId, friendId].sort().join("_");
+      let previousMessageCount = null;
+
+      onValue(ref(db, 'chats/' + chatId), snapshot => {
+        const data = snapshot.val();
+        
+        if (!data) {
+          previousMessageCount = 0;
+          return;
+        }
+
+        const msgs = Object.entries(data);
+        const currentCount = msgs.length;
+
+        if (previousMessageCount !== null && currentCount > previousMessageCount) {
+          const [lastMsgKey, lastMsg] = msgs[msgs.length - 1];
+
+          if (lastMsg && lastMsg.sender === friendId) {
+            if (currentChatFriendId !== friendId) {
+              unreadCounts[friendId] = (unreadCounts[friendId] || 0) + 1;
+            }
+            renderLists();
+
+            playWhatsAppTone();
+            showInAppPopup(`💬 ${friendName}: ${lastMsg.text}`);
+
+            if ("Notification" in window && Notification.permission === "granted") {
+              try {
+                new Notification(`💬 ${friendName}`, {
+                  body: lastMsg.text,
+                  icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
+                });
+              } catch (e) { console.log(e); }
+            }
+          }
+        }
+        previousMessageCount = currentCount;
+      });
+    }
+
+    savedFriends.forEach(f => setupChatListener(f.id, f.nickname));
+
+    function renderLists() {
+      const chatContainer = document.getElementById('chatFriendsList');
+      const trackContainer = document.getElementById('trackingFriendsList');
+      const t = translations[currentLang];
+
+      if (savedFriends.length === 0) {
+        chatContainer.innerHTML = `<p style='padding:18px; color:#777; margin:0;'>${t.noFriends}</p>`;
+        trackContainer.innerHTML = `<p class='card' style='color:#777;'>${t.noFriends}</p>`;
+        document.getElementById('totalUnreadBadge').style.display = 'none';
+        return;
+      }
+
+      let chatHTML = "";
+      let trackHTML = "";
+      let totalUnread = 0;
+
+      savedFriends.forEach((f, idx) => {
+        const unreadNum = unreadCounts[f.id] || 0;
+        totalUnread += unreadNum;
+        const unread = unreadNum > 0 ? `<span class="unread-badge">${unreadNum}</span>` : '';
+        
+        chatHTML += `
+          <div class="chat-item" onclick="openChat('${f.id}', '${f.nickname}')">
+            <div style="display:flex; align-items:center; flex:1; overflow:hidden;">
+              <div class="avatar">${f.nickname.charAt(0).toUpperCase()}</div>
+              <div class="chat-info">
+                <div class="chat-name">${f.nickname} ${unread}</div>
+                <div class="chat-last-msg" id="last-msg-${f.id}">...</div>
+              </div>
+            </div>
+            <button class="danger" style="padding:5px 10px; font-size:12px;" onclick="event.stopPropagation(); deleteFriend(${idx})">${t.btnDelete}</button>
+          </div>
+        `;
+
+        trackHTML += `
+          <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <b style="font-size:15px;">${f.nickname}</b> <br><small style="color:#777;">${f.id}</small>
+            </div>
+            <button onclick="trackSingleFriend('${f.id}', '${f.nickname}')">${t.btnViewTrack}</button>
+          </div>
+        `;
+      });
+
+      const totalBadge = document.getElementById('totalUnreadBadge');
+      if (totalUnread > 0) {
+        totalBadge.innerText = totalUnread;
+        totalBadge.style.display = 'inline-block';
+        // অ্যান্ড্রয়েড স্টুডিও / PWA ব্যাজ API আপডেট
+        if (navigator.setAppBadge) {
+          navigator.setAppBadge(totalUnread).catch(e => console.log(e));
+        }
+      } else {
+        totalBadge.style.display = 'none';
+        if (navigator.clearAppBadge) {
+          navigator.clearAppBadge().catch(e => console.log(e));
+        }
+      }
+
+      chatContainer.innerHTML = chatHTML;
+      trackContainer.innerHTML = trackHTML;
+    }
+
+    window.deleteFriend = (idx) => {
+      const msg = currentLang === 'bn' ? "মুছে ফেলতে চান?" : "Delete friend?";
+      if (confirm(msg)) {
+        savedFriends.splice(idx, 1);
+        localStorage.setItem('savedFriends', JSON.stringify(savedFriends));
+        renderLists();
+      }
+    };
+
+    window.openChat = (friendId, nickname) => {
+      currentChatFriendId = friendId;
+      unreadCounts[friendId] = 0;
+      renderLists();
+
+      document.getElementById('activeChatName').innerText = nickname;
+      document.getElementById('activeChatId').innerText = friendId;
+      document.getElementById('chatScreen').style.display = 'flex';
+      
+      markMessagesAsRead(friendId);
+      listenMessages(friendId);
+    };
+
+    window.closeChat = () => {
+      document.getElementById('chatScreen').style.display = 'none';
+      currentChatFriendId = null;
+      renderLists();
+    };
+
+    function markMessagesAsRead(friendId) {
+      const chatId = [myUserId, friendId].sort().join("_");
+      onValue(ref(db, 'chats/' + chatId), snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          Object.entries(data).forEach(([key, msg]) => {
+            if (msg.sender === friendId && msg.status !== 'read') {
+              update(ref(db, 'chats/' + chatId + '/' + key), { status: 'read' });
+            }
+          });
+        }
+      }, { onlyOnce: true });
+    }
+
+    function listenMessages(friendId) {
+      const chatId = [myUserId, friendId].sort().join("_");
+      onValue(ref(db, 'chats/' + chatId), snapshot => {
+        const historyDiv = document.getElementById('messageHistory');
+        historyDiv.innerHTML = "";
+        const data = snapshot.val();
+        const t = translations[currentLang];
+
+        if (data) {
+          Object.entries(data).forEach(([msgKey, msg]) => {
+            const isMe = msg.sender === myUserId;
+            const bubble = document.createElement('div');
+            bubble.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'}`;
+
+            let tickHTML = "";
+            if (isMe) {
+              let tickSymbol = "✓";
+              let tickClass = "tick";
+              if (msg.status === 'delivered') {
+                tickSymbol = "✓✓";
+              } else if (msg.status === 'read') {
+                tickSymbol = "✓✓";
+                tickClass = "tick tick-read";
+              }
+              tickHTML = `<span class="${tickClass}">${tickSymbol}</span>`;
+            }
+
+            let deleteBtn = isMe ? `<button class="delete-msg-btn" onclick="deleteMessage('${chatId}', '${msgKey}')">${t.btnDelete}</button>` : '';
+
+            bubble.innerHTML = `
+              <div>${msg.text}</div>
+              <div class="msg-footer">
+                ${tickHTML}
+                ${deleteBtn}
+              </div>
+            `;
+            historyDiv.appendChild(bubble);
+          });
+          historyDiv.scrollTop = historyDiv.scrollHeight;
+        } else {
+          historyDiv.innerHTML = `<p style="color:#888; text-align:center;">${currentLang === 'bn' ? 'কোনো মেসেজ নেই।' : 'No messages.'}</p>`;
+        }
+      });
+    }
+
+    window.sendMessage = () => {
+      const input = document.getElementById('chatMessageInput');
+      const text = input.value.trim();
+      if (!text || !currentChatFriendId) return;
+
+      const chatId = [myUserId, currentChatFriendId].sort().join("_");
+      const msgId = Date.now();
+      
+      set(ref(db, 'chats/' + chatId + '/' + msgId), {
+        sender: myUserId,
+        text: text,
+        timestamp: msgId,
+        status: 'delivered' 
+      });
+      input.value = "";
+    };
+
+    window.deleteMessage = (chatId, msgKey) => {
+      const msg = currentLang === 'bn' ? "ডিলিট করতে চান?" : "Delete message?";
+      if (confirm(msg)) {
+        remove(ref(db, 'chats/' + chatId + '/' + msgKey));
+      }
+    };
+
+    function clearActiveListeners() {
+      activeListeners.forEach(item => off(item.ref));
+      activeListeners = [];
+    }
+
+    window.closeTracking = () => {
+      document.getElementById('trackingDisplayArea').style.display = "none";
+      clearActiveListeners();
+    };
+
+    window.trackSingleFriend = (friendId, nickname) => {
+      clearActiveListeners();
+      const area = document.getElementById('trackingDisplayArea');
+      area.style.display = "block";
+      document.getElementById('trackingTitle').innerText = `📍 ${nickname}`;
+      
+      const locRef = ref(db, 'users/' + friendId + '/location');
+      activeListeners.push({ ref: locRef });
+
+      onValue(locRef, snapshot => {
+        const data = snapshot.val();
+        const details = document.getElementById('trackingDetails');
+        if (data) {
+          details.innerHTML = `
+            <p style="margin-bottom:8px;"><b>Coordinates:</b> ${data.latitude}, ${data.longitude}</p>
+            <iframe width="100%" height="220" style="border:0; border-radius:10px;" src="https://maps.google.com/maps?q=${data.latitude},${data.longitude}&z=15&output=embed"></iframe>
+          `;
+        } else {
+          details.innerHTML = "<p style='color:#dc3545;'>No location data.</p>";
+        }
+      });
+    };
+
+    window.trackAllFriends = () => {
+      clearActiveListeners();
+      const area = document.getElementById('trackingDisplayArea');
+      area.style.display = "block";
+      document.getElementById('trackingTitle').innerText = translations[currentLang].allTrackingTitle;
+      const details = document.getElementById('trackingDetails');
+      details.innerHTML = "";
+
+      savedFriends.forEach(f => {
+        const box = document.createElement('div');
+        box.style.marginBottom = "15px";
+        details.appendChild(box);
+
+        const locRef = ref(db, 'users/' + f.id + '/location');
+        activeListeners.push({ ref: locRef });
+
+        onValue(locRef, snapshot => {
+          const data = snapshot.val();
+          if (data) {
+            box.innerHTML = `
+              <p style="margin-bottom:6px;"><b>${f.nickname}:</b></p>
+              <iframe width="100%" height="160" style="border:0; border-radius:8px;" src="https://maps.google.com/maps?q=${data.latitude},${data.longitude}&z=14&output=embed"></iframe>
+            `;
+          }
+        });
+      });
+    };
+
+    let html5QrcodeScanner = null;
+    window.toggleScanner = () => {
+      const readerDiv = document.getElementById('reader');
+      if (readerDiv.style.display === 'none') {
+        readerDiv.style.display = 'block';
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(decodedText => {
+          const nickname = prompt("বন্ধুর নাম লিখুন:", "Friend");
+          document.getElementById('friendNicknameInput').value = nickname || "Friend";
+          document.getElementById('friendIdInput').value = decodedText;
+          handleAddFriend();
+          html5QrcodeScanner.clear();
+          readerDiv.style.display = 'none';
+        });
+      } else {
+        if (html5QrcodeScanner) html5QrcodeScanner.clear();
+        readerDiv.style.display = 'none';
+      }
+    };
+
+    renderLists();
+  </script>
+</body>
+</html>
